@@ -10,7 +10,7 @@ Simple program for easy, basic `tc` rule creation and management. Supported feat
 
 The kernel module `sch_netem` is required. If the commands fail, issue `modprobe sch_netem`.
 
-On some distros, extra packages must be installed to add `netem` module. FOr example on RH-based distros: `yum install kernel-modules-extra`.
+On some distros, extra packages must be installed to add `netem` module. For example on RH-based distros: `yum install kernel-modules-extra`.
 
 ## CLI Usage
 
