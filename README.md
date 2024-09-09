@@ -8,9 +8,9 @@ Simple program for easy, basic `tc` rule creation and management. Supported feat
 
 ## Note on kernel
 
-The kernel module `sch_netem` is required. If the commands fail, issue `modprobe sch_netem`.
+The kernel module `sch_netem` is required. Easytc will automatically attempt to `modprobe` it if need be.
 
-On some distros, extra packages must be installed to add `netem` module. For example on RH-based distros: `yum install kernel-modules-extra`.
+On some distros, extra packages must be installed to add `netem` module. For example on RH-based distros: `yum install kernel-modules-extra iproute-tc`.
 
 ## CLI Usage
 
@@ -54,14 +54,15 @@ Help Options:
 
 ```
 $ ./easytc show iface
-lo
 enp0s5
 ```
 
 ### Apply a rule
 
+Note that if the `interface` switch is not provided a rule for every interface will be created.
+
 ```
-$ ./easytc set -i enp0s5 -s 10.0.0.0/8 -d 8.8.8.8 -l 100 -p 20
+$ ./easytc set -s 10.0.0.0/8 -d 8.8.8.8 -l 100 -p 20
 ```
 
 ### Test
