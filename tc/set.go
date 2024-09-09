@@ -5,13 +5,36 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/bestmethod/inslice"
 )
 
-func Set(r *Rule) error {
+func InsertKernelMod(verbose bool) error {
+	logf(verbose, "(InsertKernelMod) Running [modprobe sch_netem]")
+	out, err := exec.Command("modprobe", "sch_netem").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s: %s", err, string(out))
+	}
+	logf(verbose, "(InsertKernelMod) return")
+	return nil
+}
+
+func Set(r *Rule, verbose bool) error {
 	// list qdisc
-	rules, err := ListRules()
+	rules, err := ListRules(verbose)
 	if err != nil {
 		return err
+	}
+
+	// list ifaces
+	var ifaces []string
+	if r.Iface == nil {
+		ifaces = rules.Interfaces
+	} else {
+		ifaces = append(ifaces, *r.Iface)
+		if !inslice.HasString(ifaces, *r.Iface) {
+			return fmt.Errorf("interface %s does not exist", *r.Iface)
+		}
 	}
 
 	// check if, and initialize qdisc if needed
@@ -31,16 +54,35 @@ func Set(r *Rule) error {
 			if iface == "lo" {
 				continue
 			}
-			out, err := exec.Command("tc", "qdisc", "add", "dev", iface, "root", "handle", "1:", "prio", "bands", "16").CombinedOutput()
+			comm := []string{"tc", "qdisc", "add", "dev", iface, "root", "handle", "1:", "prio", "bands", "16", "priomap", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2", "2"}
+			logf(verbose, "(Set) Running %v", comm)
+			out, err := exec.Command(comm[0], comm[1:]...).CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("%s: %s", err, string(out))
 			}
 		}
 	}
 
+	// work on each iface
+	stor := r.Iface
+	defer func() {
+		r.Iface = stor
+	}()
+	for _, iface := range ifaces {
+		r.Iface = &iface
+		err = set(r, rules, verbose)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func set(r *Rule, rules *Rules, verbose bool) error {
 	// find existing rule if one already there
 	// create/replace qdisc rule
-	newFlowId := 3
+	newFlowId := 4
 	for _, rule := range rules.Rules {
 		if rule.FlowID != nil {
 			fid := strings.Split(*rule.FlowID, ":")
@@ -94,6 +136,7 @@ func Set(r *Rule) error {
 	if r.PacketLossPct != nil {
 		params = append(params, "loss", *r.PacketLossPct+"%")
 	}
+	logf(verbose, "(Set) Running %v", append([]string{"tc"}, params...))
 	out, err := exec.Command("tc", params...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s: %s", err, string(out))
@@ -130,7 +173,9 @@ func Set(r *Rule) error {
 			continue
 		}
 		// we are here, the rule had been found, change flowid to match r.FlowID
-		out, err := exec.Command("tc", "filter", "replace", "dev", *rule.Iface, "protocol", "ip", "parent", "1:0", "prio", "3", "handle", *rule.FilterHandle, "u32", "flowid", *r.FlowID).CombinedOutput()
+		comm := []string{"tc", "filter", "replace", "dev", *rule.Iface, "protocol", "ip", "parent", "1:0", "prio", "3", "handle", *rule.FilterHandle, "u32", "flowid", *r.FlowID}
+		logf(verbose, "(Set) Running %v", comm)
+		out, err := exec.Command(comm[0], comm[1:]...).CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("%s: %s", err, string(out))
 		}
@@ -154,12 +199,13 @@ func Set(r *Rule) error {
 			params = append(params, "match", "ip", "dport", *r.DestinationPort, "0xffff")
 		}
 		params = append(params, "flowid", *r.FlowID)
+		logf(verbose, "(Set) Running %v", append([]string{"tc"}, params...))
 		out, err := exec.Command("tc", params...).CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("%s: %s", err, string(out))
 		}
 	}
 
-	CleanupUnusedQdisc()
+	CleanupUnusedQdisc(verbose)
 	return nil
 }
