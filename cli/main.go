@@ -24,7 +24,10 @@ type command struct {
 		Rules cmdShowRules `command:"rules" description:"list rules"`
 		All   cmdShowAll   `command:"all" description:"list all interfaces, rules, qdisc and filters in json format"`
 	} `command:"show" description:"list tc rules or interfaces"`
+	Version cmdVersion `command:"version" description:"Print version"`
 }
+
+type cmdVersion struct{}
 
 type cmdSet struct {
 	Interface          *string `short:"i" long:"interface" description:"specify an interface for the rule"`
@@ -72,6 +75,11 @@ func main() {
 		}
 		os.Exit(1)
 	}
+}
+
+func (c *cmdVersion) Execute(tail []string) error {
+	fmt.Println("v0.2")
+	return nil
 }
 
 func (c *cmdSet) Execute(tail []string) error {
