@@ -38,6 +38,7 @@ type cmdSet struct {
 	LatencyMs          *string `short:"l" long:"latency-ms" description:"optional: specify latency (number) of milliseconds"`
 	PacketLossPct      *string `short:"p" long:"loss-pct" description:"optional: specify packet loss percentage"`
 	LinkSpeedRateBytes *string `short:"e" long:"rate-bytes" description:"optional: specify link speed rate, in bytes"`
+	CorruptPct         *string `short:"c" long:"corrupt-pct" description:"optional: currupt packets (percentage)"`
 	Verbose            bool    `long:"verbose" description:"enable verbose logging"`
 }
 
@@ -78,7 +79,7 @@ func main() {
 }
 
 func (c *cmdVersion) Execute(tail []string) error {
-	fmt.Println("v0.2")
+	fmt.Println("v0.3")
 	return nil
 }
 
@@ -93,6 +94,12 @@ func (c *cmdSet) Execute(tail []string) error {
 			return errNoNetem
 		}
 	}
+	if c.SourceIP == nil && c.SourcePort == nil && c.DestinationIP == nil && c.DestinationPort == nil {
+		return errors.New("at least one filter must be provided from: sourceIp,sourcePort,destinationIp,destinationPort")
+	}
+	if c.LatencyMs == nil && c.LinkSpeedRateBytes == nil && c.PacketLossPct == nil && c.CorruptPct == nil {
+		return errors.New("at least one action must be specified from: latencyMs,linkSpeedRate,packetLossPct,corruptPct")
+	}
 	return tc.Set(&tc.Rule{
 		Iface:              c.Interface,
 		SourceIP:           c.SourceIP,
@@ -102,6 +109,7 @@ func (c *cmdSet) Execute(tail []string) error {
 		LatencyMs:          c.LatencyMs,
 		PacketLossPct:      c.PacketLossPct,
 		LinkSpeedRateBytes: c.LinkSpeedRateBytes,
+		CorruptPct:         c.CorruptPct,
 	}, c.Verbose)
 }
 
@@ -189,7 +197,7 @@ func (c *cmdShowRules) Execute(tail []string) error {
 		}
 		t.SetAllowedRowLength(width)
 	}
-	t.AppendHeader(table.Row{"Iface", "SrcIP", "DstIP", "SrcPort", "DstPort", "LatencyMs", "PacketLossPct", "RateBytes", "TcFlowID", "TcQdiscHandle", "TcFilterHandle"})
+	t.AppendHeader(table.Row{"Iface", "SrcIP", "DstIP", "SrcPort", "DstPort", "LatencyMs", "PacketLossPct", "CorruptPct", "RateBytes", "TcFlowID", "TcQdiscHandle", "TcFilterHandle"})
 	for _, rule := range rules.Rules {
 		vv := table.Row{
 			tc.PtrToString(rule.Iface),
@@ -199,6 +207,7 @@ func (c *cmdShowRules) Execute(tail []string) error {
 			tc.PtrToString(rule.DestinationPort),
 			tc.PtrToString(rule.LatencyMs),
 			tc.PtrToString(rule.PacketLossPct),
+			tc.PtrToString(rule.CorruptPct),
 			tc.PtrToString(rule.LinkSpeedRateBytes),
 			tc.PtrToString(rule.FlowID),
 			tc.PtrToString(rule.QdiscHandle),

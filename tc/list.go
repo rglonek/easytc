@@ -117,6 +117,12 @@ func qdiscListNoJsonParseNetem(qd *Qdisc, name string, value string) {
 	case "limit":
 		lim, _ := strconv.Atoi(value)
 		qd.Options.NetemLimit = &lim
+	case "corrupt":
+		corrupt, _ := strconv.Atoi(strings.TrimSuffix(value, "%"))
+		corruptFloat := float64(corrupt) / 100
+		qd.Options.NetemCorrupt = &NetemCorrupt{
+			Corrupt: corruptFloat,
+		}
 	case "loss":
 		loss, _ := strconv.Atoi(strings.TrimSuffix(value, "%"))
 		lossFloat := float64(loss) / 100
@@ -442,6 +448,7 @@ func ListRules(verbose bool) (*Rules, error) {
 			var latency *string
 			var linkSpeed *string
 			var packetLoss *string
+			var corruptPct *string
 			if q.Options.NetemDelay != nil {
 				latency = StringToPtr(fmt.Sprintf("%0.0f", q.Options.NetemDelay.Delay*1000))
 			}
@@ -450,6 +457,9 @@ func ListRules(verbose bool) (*Rules, error) {
 			}
 			if q.Options.NetemLossRandom != nil {
 				packetLoss = StringToPtr(fmt.Sprintf("%0.2f", q.Options.NetemLossRandom.Loss*100))
+			}
+			if q.Options.NetemCorrupt != nil {
+				corruptPct = StringToPtr(fmt.Sprintf("%0.2f", q.Options.NetemCorrupt.Corrupt*100))
 			}
 			if !inslice.HasInt(qdiscs, qi) {
 				qdiscs = append(qdiscs, qi)
@@ -471,6 +481,7 @@ func ListRules(verbose bool) (*Rules, error) {
 				LatencyMs:          latency,
 				PacketLossPct:      packetLoss,
 				LinkSpeedRateBytes: linkSpeed,
+				CorruptPct:         corruptPct,
 				FlowID:             f.Options.FlowId,
 				FilterNo:           fi,
 				QdiscNo:            qi,

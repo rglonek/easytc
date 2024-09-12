@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.3
+* Ensure `set` defines at least one of the filters and at least one of the actions
+* Add `corrupt` action
+
 ## v0.2
 
 * Add verbose logging option

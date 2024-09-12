@@ -180,8 +180,14 @@ type QdiscOptions struct {
 	NetemDelay      *NetemDelay      `json:"delay"`
 	NetemLossRandom *NetemLossRandom `json:"loss-random"`
 	NetemRate       *NetemRate       `json:"rate"`
+	NetemCorrupt    *NetemCorrupt    `json:"corrupt"`
 	NetemEcn        *bool            `json:"ecn"`
 	NetemGap        *float64         `json:"gap"`
+}
+
+type NetemCorrupt struct {
+	Corrupt     float64 `json:"corrupt"`
+	Correlation float64 `json:"correlation"`
 }
 
 type NetemDelay struct {
@@ -256,6 +262,7 @@ type Rule struct {
 	LatencyMs          *string
 	PacketLossPct      *string
 	LinkSpeedRateBytes *string
+	CorruptPct         *string
 	// output only parameters
 	FlowID       *string
 	FilterNo     int

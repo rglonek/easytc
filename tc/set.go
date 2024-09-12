@@ -111,6 +111,15 @@ func set(r *Rule, rules *Rules, verbose bool) error {
 				continue
 			}
 		}
+		if (rule.CorruptPct == nil && r.CorruptPct != nil) || (rule.CorruptPct != nil && r.CorruptPct == nil) {
+			continue
+		}
+		if r.CorruptPct != nil {
+			pctTr, _ := strconv.ParseFloat(*r.CorruptPct, 64)
+			if fmt.Sprintf("%0.2f", pctTr) != *rule.CorruptPct {
+				continue
+			}
+		}
 		if (rule.LinkSpeedRateBytes == nil && r.LinkSpeedRateBytes != nil) || (rule.LinkSpeedRateBytes != nil && r.LinkSpeedRateBytes == nil) {
 			continue
 		}
@@ -135,6 +144,9 @@ func set(r *Rule, rules *Rules, verbose bool) error {
 	}
 	if r.PacketLossPct != nil {
 		params = append(params, "loss", *r.PacketLossPct+"%")
+	}
+	if r.CorruptPct != nil {
+		params = append(params, "corrupt", *r.CorruptPct+"%")
 	}
 	logf(verbose, "(Set) Running %v", append([]string{"tc"}, params...))
 	out, err := exec.Command("tc", params...).CombinedOutput()
