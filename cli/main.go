@@ -60,6 +60,7 @@ type cmdShowIface struct{}
 
 type cmdShowRules struct {
 	Verbose bool `long:"verbose" description:"enable verbose logging"`
+	Quiet   bool `long:"quiet" description:"hush terminal warnings"`
 }
 
 type cmdShowAll struct {
@@ -79,7 +80,7 @@ func main() {
 }
 
 func (c *cmdVersion) Execute(tail []string) error {
-	fmt.Println("v0.3")
+	fmt.Println("v0.4")
 	return nil
 }
 
@@ -190,7 +191,9 @@ func (c *cmdShowRules) Execute(tail []string) error {
 	tstyle.Format.Footer = text.FormatDefault
 	width, _, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil || width < 1 {
-		fmt.Fprintf(os.Stderr, "Couldn't get terminal width (int:%v): %v", width, err)
+		if !c.Quiet {
+			fmt.Fprintf(os.Stderr, "Couldn't get terminal width (int:%v): %v\n", width, err)
+		}
 	} else {
 		if width < 40 {
 			width = 40

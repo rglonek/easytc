@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v0.4
+* Add option to not print terminal warnings in `show rules` command output.
+
 ## v0.3
 * Ensure `set` defines at least one of the filters and at least one of the actions
 * Add `corrupt` action
