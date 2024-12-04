@@ -1,7 +1,10 @@
 # CHANGELOG
 
+## v0.5
+* Add `--no-check-module` to avoid `sch_netem` check in `lsmod`
+
 ## v0.4
-* Add option to not print terminal warnings in `show rules` command output.
+* Add option to not print terminal warnings in `show rules` command output
 
 ## v0.3
 * Ensure `set` defines at least one of the filters and at least one of the actions

@@ -39,6 +39,7 @@ type cmdSet struct {
 	PacketLossPct      *string `short:"p" long:"loss-pct" description:"optional: specify packet loss percentage"`
 	LinkSpeedRateBytes *string `short:"e" long:"rate-bytes" description:"optional: specify link speed rate, in bytes"`
 	CorruptPct         *string `short:"c" long:"corrupt-pct" description:"optional: currupt packets (percentage)"`
+	NoCheckModule      bool    `short:"N" long:"no-check-module" description:"do not check if sch_netem is in lsmod output"`
 	Verbose            bool    `long:"verbose" description:"enable verbose logging"`
 }
 
@@ -48,12 +49,14 @@ type cmdDel struct {
 	DestinationIP   *string `short:"d" long:"dst-ip" description:"filter destination IP"`
 	SourcePort      *string `short:"S" long:"src-port" description:"filter source port"`
 	DestinationPort *string `short:"D" long:"dst-port" description:"filter destination port"`
+	NoCheckModule   bool    `short:"N" long:"no-check-module" description:"do not check if sch_netem is in lsmod output"`
 	Verbose         bool    `long:"verbose" description:"enable verbose logging"`
 }
 
 type cmdReset struct {
-	Interface *string `short:"i" long:"interface" description:"optional: specify an interface; default action: all interfaces"`
-	Verbose   bool    `long:"verbose" description:"enable verbose logging"`
+	Interface     *string `short:"i" long:"interface" description:"optional: specify an interface; default action: all interfaces"`
+	NoCheckModule bool    `short:"N" long:"no-check-module" description:"do not check if sch_netem is in lsmod output"`
+	Verbose       bool    `long:"verbose" description:"enable verbose logging"`
 }
 
 type cmdShowIface struct{}
@@ -80,19 +83,21 @@ func main() {
 }
 
 func (c *cmdVersion) Execute(tail []string) error {
-	fmt.Println("v0.4")
+	fmt.Println("v0.5")
 	return nil
 }
 
 func (c *cmdSet) Execute(tail []string) error {
-	mods, err := tc.ListKernelMods(c.Verbose)
-	if err != nil {
-		return err
-	}
-	if !inslice.HasString(mods, "sch_netem") {
-		err = tc.InsertKernelMod(c.Verbose)
+	if !c.NoCheckModule {
+		mods, err := tc.ListKernelMods(c.Verbose)
 		if err != nil {
-			return errNoNetem
+			return err
+		}
+		if !inslice.HasString(mods, "sch_netem") {
+			err = tc.InsertKernelMod(c.Verbose)
+			if err != nil {
+				return errNoNetem
+			}
 		}
 	}
 	if c.SourceIP == nil && c.SourcePort == nil && c.DestinationIP == nil && c.DestinationPort == nil {
@@ -115,14 +120,16 @@ func (c *cmdSet) Execute(tail []string) error {
 }
 
 func (c *cmdDel) Execute(tail []string) error {
-	mods, err := tc.ListKernelMods(c.Verbose)
-	if err != nil {
-		return err
-	}
-	if !inslice.HasString(mods, "sch_netem") {
-		err = tc.InsertKernelMod(c.Verbose)
+	if !c.NoCheckModule {
+		mods, err := tc.ListKernelMods(c.Verbose)
 		if err != nil {
-			return errNoNetem
+			return err
+		}
+		if !inslice.HasString(mods, "sch_netem") {
+			err = tc.InsertKernelMod(c.Verbose)
+			if err != nil {
+				return errNoNetem
+			}
 		}
 	}
 	return tc.Delete(&tc.Rule{
@@ -137,14 +144,16 @@ func (c *cmdDel) Execute(tail []string) error {
 var errNoNetem = errors.New("kernel module 'sch_netem' not found; centos install via `yum install kernel-modules-extra iproute-tc`; reboot may be required")
 
 func (c *cmdReset) Execute(tail []string) error {
-	mods, err := tc.ListKernelMods(c.Verbose)
-	if err != nil {
-		return err
-	}
-	if !inslice.HasString(mods, "sch_netem") {
-		err = tc.InsertKernelMod(c.Verbose)
+	if !c.NoCheckModule {
+		mods, err := tc.ListKernelMods(c.Verbose)
 		if err != nil {
-			return errNoNetem
+			return err
+		}
+		if !inslice.HasString(mods, "sch_netem") {
+			err = tc.InsertKernelMod(c.Verbose)
+			if err != nil {
+				return errNoNetem
+			}
 		}
 	}
 	return tc.Reset(c.Interface, c.Verbose)
